@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { margin:0; padding:0; font-family: sans-serif; font-size: 0.85rem; }
+    .table-wrapper { overflow-y:auto; max-height: 500px; border: 1px solid #e5e7eb; border-radius: 8px; }
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    th { padding: 12px 16px; font-weight: 600; white-space: nowrap; background: #f8fafc; color: #475569; position: sticky; top: 0; border-bottom: 2px solid #e5e7eb; z-index: 10; }
+    td { padding: 12px 16px; color: #1e293b; white-space: nowrap; border-bottom: 1px solid #e5e7eb; }
+    tr:hover { background: #f1f5f9; }
+    a { color: #2563EB; font-weight: bold; text-decoration: none; cursor: pointer; }
+    a:hover { text-decoration: underline; }
+  </style>
+  <script>
+    function sendMessageToStreamlitClient(type, data) {
+        window.parent.postMessage({isStreamlitMessage: true, type: type, ...data}, "*");
+    }
+    
+    function sendClick(asset, metric) {
+        // Send the clicked asset and metric back to Streamlit
+        sendMessageToStreamlitClient("streamlit:setComponentValue", {value: {asset: asset, metric: metric}});
+    }
+    
+    // Receive data arguments from Streamlit python script
+    function onDataFromPython(event) {
+        if (event.data.type !== "streamlit:render") return;
+        
+        const args = event.data.args;
+        const columns = args.columns;
+        const data = args.data;
+        
+        let html = "<div class='table-wrapper'><table><thead><tr>";
+        columns.forEach(col => html += `<th>${col}</th>`);
+        html += "</tr></thead><tbody>";
+        
+        data.forEach(row => {
+            html += "<tr>";
+            columns.forEach(col => {
+                let val = row[col];
+                // Check if this column should be a clickable metric
+                if (['Active Users', 'Inactive Users', 'Total Users', 'Last Accessed Users'].includes(col)) {
+                    let safeAsset = String(row['Asset Name']).replace(/'/g, "\\'");
+                    html += `<td><a onclick="sendClick('${safeAsset}', '${col}')">${val}</a></td>`;
+                } else {
+                    html += `<td>${val}</td>`;
+                }
+            });
+            html += "</tr>";
+        });
+        html += "</tbody></table></div>";
+        
+        document.getElementById("table-container").innerHTML = html;
+        sendMessageToStreamlitClient("streamlit:setFrameHeight", {height: 520});
+    }
+    
+    window.addEventListener("message", onDataFromPython);
+    sendMessageToStreamlitClient("streamlit:componentReady", {apiVersion: 1});
+  </script>
+</head>
+<body>
+  <div id="table-container"></div>
+</body>
+</html>
