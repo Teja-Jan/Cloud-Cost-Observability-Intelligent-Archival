@@ -74,7 +74,7 @@ st.set_page_config(
 )
 
 # ─── CSS ─────────────────────────────────────────────────────────────────────
-st.html("""
+st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@600;700;800&display=swap');
 
@@ -290,7 +290,7 @@ div[data-testid="stExpander"]:has(#ai_assistant_anchor) [data-testid="stExpander
     opacity: 1;
 }
 </style>
-""")
+""", unsafe_allow_html=True)
 
 # ─── SESSION STATE ────────────────────────────────────────────────────────────
 if "active_domain" not in st.session_state:
@@ -313,12 +313,12 @@ usage_df, assets_df = load_data()
 
 # ─── APP STRUCTURE ────────────────────────────────────────────────────────────
 def main():
-    st.html(f"""
+    st.markdown(f"""
     <div class="header-bar">
       <h1 class="header-title">{APP_TITLE}</h1>
       <p class="header-sub">{APP_SUBTITLE}</p>
     </div>
-    """)
+    """, unsafe_allow_html=True)
 
     if not st.session_state.active_domain:
         render_domain_selection()
@@ -326,7 +326,7 @@ def main():
         render_dashboard()
 
 def render_domain_selection():
-    st.html("<div class='section-header'>Select Analytical Domain</div>")
+    st.markdown("<div class='section-header'>Select Analytical Domain</div>", unsafe_allow_html=True)
     st.caption("Choose the business domain to analyze usage and cost optimization opportunities.")
     
     cols = st.columns(5)
@@ -353,7 +353,7 @@ def render_dashboard():
     plat_assets = assets_df[(assets_df['domain'] == domain) & (assets_df['platform'] == plat)]
     plat_usage = usage_df[usage_df['platform'] == plat]
     
-    st.html(f"""
+    st.markdown(f"""
     <div class="context-banner">
         <div class="context-banner-icon">ℹ️</div>
         <div class="context-banner-text">
@@ -361,7 +361,7 @@ def render_dashboard():
             All cost calculations, forecasts, and optimization recommendations are dynamically generated based on this specific environment.
         </div>
     </div>
-    """)
+    """, unsafe_allow_html=True)
 
     # ── AI Consolidated Insights Banner ──
     # Aggregated metrics for the banner
@@ -375,7 +375,7 @@ def render_dashboard():
     sel_db_cnt = len(st.session_state.get('obs_db', []))
     sel_sch_cnt = len(st.session_state.get('obs_schema', []))
     
-    st.html(f"""
+    st.markdown(f"""
     <div style="background: linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%); border: 1px solid #BAE6FD; border-radius: 12px; padding: 20px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(37,99,235,0.05);">
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
             <span style="background: #2563EB; color: white; padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 800; letter-spacing: 1px;">AI INSIGHTS</span>
@@ -400,7 +400,7 @@ def render_dashboard():
             </div>
         </div>
     </div>
-    """)
+    """, unsafe_allow_html=True)
     
     # Setup Engines
     pricing_engine = PricingEngine()
@@ -433,7 +433,7 @@ def render_dashboard():
 
     @st.dialog("User Access & Governance Audit", width="large")
     def show_asset_users_specific(asset_data, metric):
-        st.html(f"### 🛡️ {asset_data['Asset Name']}")
+        st.markdown(f"### 🛡️ {asset_data['Asset Name']}")
         st.markdown(f"**Location:** `{asset_data['Database']}.{asset_data['Schema']}`")
         
         def gen_users(count, seed_name):
@@ -501,7 +501,7 @@ def render_dashboard():
                 <div style="font-size:1.1rem;font-weight:700;color:var(--primary);">{bot3_val}</div>
             </div>
             </div>
-        </div>""")
+        </div>""", unsafe_allow_html=True)
 
     # ── Tabs Content ──
     tabs = st.tabs([
@@ -512,7 +512,7 @@ def render_dashboard():
     
         # ── 1. OBSERVABILITY ──
     with tabs[0]:
-        st.html("<div class='section-header'>Observability — Cloud Resource</div>")
+        st.markdown("<div class='section-header'>Observability — Cloud Resource</div>", unsafe_allow_html=True)
         st.caption(f"Real-time resource metrics across Cost, Storage, Compute, and Memory for {plat} — {domain} domain. Hover ℹ️ icons for metric definitions.")
 
         # ── Metric Data Preparation ──
@@ -584,13 +584,13 @@ def render_dashboard():
                              obs_tooltips["Memory"])
 
             with c_chart:
-                st.html("<div style='margin-top:20px;'></div>")
+                st.markdown("<div style='margin-top:20px;'></div>", unsafe_allow_html=True)
                 fig = px.pie(plat_assets, names='database', values='size_gb', title="Storage Distribution", hole=0.4,
                              color_discrete_sequence=px.colors.qualitative.Set2)
                 fig.update_layout(height=450, margin=dict(t=50,b=20,l=10,r=10), showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=-0.2, xanchor="center", x=0.5))
                 st.plotly_chart(fig, use_container_width=True)
 
-        st.html("---")
+        st.markdown("---")
 
         # ── 🔍 Hierarchy Filters (Optimization Style) ──────────────────
         if "obs_db" not in st.session_state: st.session_state.obs_db = []
@@ -656,7 +656,7 @@ def render_dashboard():
 
     # ── 2. FORECASTING ──
     with tabs[1]:
-        st.markdown("<div class='section-header'>Forecasting — Cost, Storage, Compute & Memory</div>")
+        st.markdown("<div class='section-header'>Forecasting — Cost, Storage, Compute & Memory</div>", unsafe_allow_html=True)
         st.caption(f"Linear Trend Analysis (OLS) — 30-day baseline | 1-Year & 5-Year projections for {plat}. Hover ℹ️ on each card for model assumptions.")
 
         if not plat_usage.empty:
@@ -689,7 +689,7 @@ def render_dashboard():
                 wow_p = (wow - cur) / sc * 100
                 mom_p = (mom - cur) / sc * 100
                 yoy_p = (yoy - cur) / sc * 100
-                st.html(f"""
+                st.markdown(f"""
                 <div class="forecast-card">
                   <div class="forecast-metric-title">{icon} {label} {info_icon(tip_text)}</div>
                   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;">
@@ -723,7 +723,7 @@ def render_dashboard():
                       <div style="font-size:0.8rem;color:var(--muted);">{unit}{yoy:,.2f}</div>
                     </div>
                   </div>
-                </div>""")
+                </div>""", unsafe_allow_html=True)
 
             # ── 4 simultaneous forecast cards in 2×2 grid ─────────────────
             r1c1, r1c2 = st.columns(2)
@@ -738,7 +738,7 @@ def render_dashboard():
                 forecast_card("Memory", "🧠", "memory_usage_gb", "", " GB")
 
             # ── Rationalization box ────────────────────────────────────────
-            st.html(f"""
+            st.markdown(f"""
             <div class="forecast-reason-box" style="margin-bottom:24px;">
               <div style="font-size:0.75rem;font-weight:800;color:var(--primary);margin-bottom:6px;text-transform:uppercase;">
                 Forecast Rationalization &nbsp;·&nbsp; Model: {insight.get('model','Linear Trend Analysis (OLS)')}
@@ -750,10 +750,10 @@ def render_dashboard():
                 <span class="forecast-driver-tag">Memory: {proj['Current']['memory_usage_gb']:,.0f} GB</span>
                 <span class="forecast-driver-tag">Transfer: {proj['Current']['data_transfer_gb']:,.0f} GB</span>
               </div>
-            </div>""")
+            </div>""", unsafe_allow_html=True)
 
             # ── 4 separate charts in 2×2 grid ─────────────────────────────
-            st.html("#### Trend Charts — Historical & 5-Year Projection")
+            st.markdown("#### Trend Charts — Historical & 5-Year Projection")
             chart_specs = [
                 ("Cost ($)", "total_cost", "#2563EB"),
                 ("Storage (GB)", "storage_gb", "#059669"),
@@ -799,7 +799,7 @@ def render_dashboard():
 
     # ── 3. CLOUD GOVERNANCE & OPTIMIZATION ──
     with tabs[2]:
-        st.markdown("<div class='section-header'>Cloud Governance & Optimization — Observability Intelligence</div>")
+        st.markdown("<div class='section-header'>Cloud Governance & Optimization — Observability Intelligence</div>", unsafe_allow_html=True)
         
         # Moved Governance Card from Observability
         g1, g2 = st.columns([2, 1])
@@ -819,13 +819,13 @@ def render_dashboard():
                      f"{active_users_g}", "LAST 24H",
                      "Governance metric identifying potential access risks from inactive accounts.")
         with g2:
-             st.html("""
+             st.markdown("""
                 <div style="font-size:0.95rem;color:#334155;margin-top:20px;line-height:1.6;background:#F8FAFC;padding:24px;border-radius:16px;border-left:4px solid #2563EB;box-shadow:0 4px 12px rgba(0,0,0,0.05);">
                 <b>Data Archival Process and Recommendations</b><br>
                 Review inactive assets across your enterprise data landscape. Identify candidates for cold storage archival,
                 validate governance context, and execute a governed approval workflow with rollback safeguards.
                 </div>
-                """)
+                """, unsafe_allow_html=True)
 
         # ── KPI Cards ──────────────────────────────────────────────────────
         total_assets  = len(plat_assets)
@@ -833,9 +833,9 @@ def render_dashboard():
         inactive_assets = total_assets - active_assets
 
         k1, k2, k3 = st.columns(3)
-        k1.html(f"<div class='kpi-card'><div class='kpi-value'>{total_assets:,}</div><div class='kpi-label'>Total Assets</div></div>")
-        k2.html(f"<div class='kpi-card'><div class='kpi-value' style='color:var(--green);'>{active_assets:,}</div><div class='kpi-label'>Active Assets</div></div>")
-        k3.html(f"<div class='kpi-card'><div class='kpi-value' style='color:var(--amber);'>{inactive_assets:,}</div><div class='kpi-label'>Inactive Assets</div></div>")
+        k1.markdown(f"<div class='kpi-card'><div class='kpi-value'>{total_assets:,}</div><div class='kpi-label'>Total Assets</div></div>", unsafe_allow_html=True)
+        k2.markdown(f"<div class='kpi-card'><div class='kpi-value' style='color:var(--green);'>{active_assets:,}</div><div class='kpi-label'>Active Assets</div></div>", unsafe_allow_html=True)
+        k3.markdown(f"<div class='kpi-card'><div class='kpi-value' style='color:var(--amber);'>{inactive_assets:,}</div><div class='kpi-label'>Inactive Assets</div></div>", unsafe_allow_html=True)
 
         # ── Cascading Filter Logic (Optimization) ──
         if "opt_db" not in st.session_state: st.session_state.opt_db = []
@@ -843,7 +843,7 @@ def render_dashboard():
         if "opt_table" not in st.session_state: st.session_state.opt_table = []
         if "opt_category" not in st.session_state: st.session_state.opt_category = "All Assets"
 
-        st.html("#### 🔍 Optimization Hierarchy Filters")
+        st.markdown("#### 🔍 Optimization Hierarchy Filters")
         fo1, fo2, fo3, fo4 = st.columns(4)
         
         # Asset Category (Replacing 3 buttons)
@@ -886,7 +886,7 @@ def render_dashboard():
         st.markdown("---")
 
         # ── Data Archival Recommendations & Lifecycle Management ───────────────────────
-        st.markdown("<div class='section-header' style='font-size:1.1rem;'>AI-Driven Governance Recommendations & Lifecycle Management</div>")
+        st.markdown("<div class='section-header' style='font-size:1.1rem;'>AI-Driven Governance Recommendations & Lifecycle Management</div>", unsafe_allow_html=True)
 
         inactive_df = filtered_opt[~filtered_opt['is_active']].copy()
 
@@ -894,14 +894,14 @@ def render_dashboard():
             st.success("No inactive assets found with current filters. All selected assets are actively used.")
         else:
             # ── Multi-Dimensional Recommendation Engine ──
-            st.html("""
+            st.markdown("""
             <div style="background:#EFF6FF; border:1px solid #BFDBFE; border-radius:12px; padding:16px; margin-bottom:20px;">
                 <p style="margin:0; font-size:0.9rem; color:#1E40AF;">
                     <b>Governance Intelligence:</b> Select an asset from the list below to generate <b>15+ governance dimensions</b> 
                     including lineage impact, compute-intensive object analysis, and performance optimization opportunities.
                 </p>
             </div>
-            """)
+            """, unsafe_allow_html=True)
             
             col_sel, col_empty = st.columns([1, 1.5])
             with col_sel:
@@ -919,7 +919,7 @@ def render_dashboard():
                 recommendations = gov_engine.generate_recommendations(asset_row)
                 
                 # Render Recommendation Cards in a scrollable/grid layout
-                st.html(f"#### 📊 Multi-Dimensional Governance Insights: `{selected_asset_name}`")
+                st.markdown(f"#### 📊 Multi-Dimensional Governance Insights: `{selected_asset_name}`")
                 
                 # Grid of recommendations
                 rec_cols = st.columns(3)
@@ -934,7 +934,7 @@ def render_dashboard():
                             </div>
                             <div style="font-size:0.85rem; color:#1F2937; line-height:1.5;">{rec['recommendation']}</div>
                         </div>
-                        """)
+                        """, unsafe_allow_html=True)
 
                 # Prepare combined export data for the specific asset
                 buf_gov = io.BytesIO()
@@ -950,9 +950,9 @@ def render_dashboard():
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     use_container_width=True
                 )
-                st.html("<br>")
+                st.markdown("<br>", unsafe_allow_html=True)
                 
-            st.html("**Inactive Asset Inventory — Archival Candidates**")
+            st.markdown("**Inactive Asset Inventory — Archival Candidates**")
             grid_cols = [
                 'table_name','object_type','database','schema','format',
                 'size_gb','cost_per_month','five_year_savings','storage_release_gb',
@@ -998,7 +998,7 @@ def render_dashboard():
         st.markdown("---")
 
         # ── Approval & Governance Workflow ──────────────────────────────────
-        st.markdown("<div class='section-header' style='font-size:1.1rem;'>Approval, Export & Notification Workflow</div>")
+        st.markdown("<div class='section-header' style='font-size:1.1rem;'>Approval, Export & Notification Workflow</div>", unsafe_allow_html=True)
 
         if not st.session_state.archival_cart:
             st.info("No assets staged for archival yet. Select candidates above and click 'Add Selected to Approval Workflow'.")
@@ -1011,9 +1011,9 @@ def render_dashboard():
             total_gb  = plat_assets[plat_assets['table_name'].isin(st.session_state.archival_cart)]['storage_release_gb'].sum()
 
             mc1, mc2, mc3 = st.columns(3)
-            mc1.html(f"<div class='kpi-card'><div class='kpi-value' style='color:var(--green);'>${total_sav:,.0f}</div><div class='kpi-label'>5-Year Savings</div></div>")
-            mc2.html(f"<div class='kpi-card'><div class='kpi-value'>{len(cart_df)}</div><div class='kpi-label'>Assets Staged</div></div>")
-            mc3.html(f"<div class='kpi-card'><div class='kpi-value'>{total_gb:,.1f} GB</div><div class='kpi-label'>Storage Release</div></div>")
+            mc1.markdown(f"<div class='kpi-card'><div class='kpi-value' style='color:var(--green);'>${total_sav:,.0f}</div><div class='kpi-label'>5-Year Savings</div></div>", unsafe_allow_html=True)
+            mc2.markdown(f"<div class='kpi-card'><div class='kpi-value'>{len(cart_df)}</div><div class='kpi-label'>Assets Staged</div></div>", unsafe_allow_html=True)
+            mc3.markdown(f"<div class='kpi-card'><div class='kpi-value'>{total_gb:,.1f} GB</div><div class='kpi-label'>Storage Release</div></div>", unsafe_allow_html=True)
 
             st.dataframe(cart_df, use_container_width=True, hide_index=True, height=300)
 
@@ -1062,7 +1062,7 @@ def render_dashboard():
 
     # ── Floating AI Assistant Sidebar ──
     with st.expander("✨ Cloud AI Assistant", expanded=False):
-        st.html("<div id='ai_assistant_anchor'></div>")
+        st.markdown("<div id='ai_assistant_anchor'></div>", unsafe_allow_html=True)
         
         # Chat history
         chat_html = "<div class='ai-chat-container'>"
@@ -1071,7 +1071,7 @@ def render_dashboard():
             prefix = "User: " if msg["role"] == "user" else "AI Agent: "
             chat_html += f"<div class='chat-msg {css_class}'><b>{prefix}</b>{msg['content']}</div>"
         chat_html += "</div>"
-        st.html(chat_html)
+        st.markdown(chat_html, unsafe_allow_html=True)
         
         with st.form("ai_chat_form", clear_on_submit=True):
             user_q = st.text_input("Ask a question or issue a command:", placeholder="e.g., Who has access to ehr_prod_db?")
