@@ -1,8 +1,15 @@
 # Cloud Cost Observability & Intelligent Archival
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Teja-Jan/Cloud-Cost-Observability-Intelligent-Archival/blob/main/app.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Teja-Jan/Cloud-Cost-Observability-Intelligent-Archival/blob/master/app.ipynb)
 
 An enterprise-grade, platform-agnostic intelligence platform for cloud cost observability, predictive forecasting, and intelligent data archival governance.
+
+## ▶️ Run in Google Colab
+
+1. Click the **"Open in Colab"** badge above
+2. Run **Cell 1** — clones the repo and installs all dependencies
+3. Run **Cell 2** — launches the app via Cloudflare Tunnel and prints your live URL
+4. Click the `trycloudflare.com` URL to open the platform — no password required
 
 ## Overview
 
