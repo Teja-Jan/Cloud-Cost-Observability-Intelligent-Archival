@@ -265,7 +265,7 @@ def ensure_mock_data():
 
     # ── 1. Cloud Usage History ──────────────────────────────────────────────
     usage_path = "data/raw/cloud_usage_history.csv"
-    if not os.path.exists(usage_path) or True:
+    if not os.path.exists(usage_path):
         records = []
         start_date = datetime.now() - timedelta(days=365 * 2)  # 2 years history
 
@@ -301,7 +301,7 @@ def ensure_mock_data():
 
     # ── 2. Platform Assets ──────────────────────────────────────────────────
     assets_path = "data/raw/platform_assets.csv"
-    if not os.path.exists(assets_path) or True:
+    if not os.path.exists(assets_path):
         records = []
         now = datetime.now()
 
