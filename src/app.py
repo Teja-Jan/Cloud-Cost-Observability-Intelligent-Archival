@@ -602,6 +602,13 @@ def render_dashboard():
             st.session_state.obs_db = []
             st.session_state.obs_schema = []
             st.session_state.obs_table = []
+            
+        def obs_db_changed():
+            st.session_state.obs_schema = []
+            st.session_state.obs_table = []
+
+        def obs_schema_changed():
+            st.session_state.obs_table = []
 
         st.markdown("#### 🔍 Observability Hierarchy Filters")
         fo1, fo2, fo3, fo4 = st.columns(4)
@@ -611,14 +618,14 @@ def render_dashboard():
         
         # Database Filter
         db_opts = sorted(plat_assets['database'].unique())
-        st.session_state.obs_db = fo2.multiselect("📁 Database", db_opts, key="obs_db_sel", default=st.session_state.obs_db)
+        st.session_state.obs_db = fo2.multiselect("📁 Database", db_opts, key="obs_db_sel", default=st.session_state.obs_db, on_change=obs_db_changed)
         
         # Schema Filter (Cascading)
         if st.session_state.obs_db:
             sch_opts = sorted(plat_assets[plat_assets['database'].isin(st.session_state.obs_db)]['schema'].unique())
         else:
             sch_opts = sorted(plat_assets['schema'].unique())
-        st.session_state.obs_schema = fo3.multiselect("📂 Schema", sch_opts, key="obs_schema_sel", default=[s for s in st.session_state.obs_schema if s in sch_opts])
+        st.session_state.obs_schema = fo3.multiselect("📂 Schema", sch_opts, key="obs_schema_sel", default=[s for s in st.session_state.obs_schema if s in sch_opts], on_change=obs_schema_changed)
         
         # Table Filter (Cascading)
         if st.session_state.obs_schema:
@@ -853,6 +860,13 @@ def render_dashboard():
             st.session_state.opt_schema = []
             st.session_state.opt_table = []
 
+        def opt_db_changed():
+            st.session_state.opt_schema = []
+            st.session_state.opt_table = []
+
+        def opt_schema_changed():
+            st.session_state.opt_table = []
+
         st.markdown("#### 🔍 Optimization Hierarchy Filters")
         fo1, fo2, fo3, fo4 = st.columns(4)
         
@@ -861,14 +875,14 @@ def render_dashboard():
         
         # Database Filter
         db_options_opt = sorted(plat_assets['database'].unique())
-        st.session_state.opt_db = fo2.multiselect("📁 Database", db_options_opt, key="opt_db_sel", default=st.session_state.opt_db)
+        st.session_state.opt_db = fo2.multiselect("📁 Database", db_options_opt, key="opt_db_sel", default=st.session_state.opt_db, on_change=opt_db_changed)
         
         # Schema Filter (Cascading)
         if st.session_state.opt_db:
             schema_options_opt = sorted(plat_assets[plat_assets['database'].isin(st.session_state.opt_db)]['schema'].unique())
         else:
             schema_options_opt = sorted(plat_assets['schema'].unique())
-        st.session_state.opt_schema = fo3.multiselect("📂 Schema", schema_options_opt, key="opt_schema_sel", default=[s for s in st.session_state.opt_schema if s in schema_options_opt])
+        st.session_state.opt_schema = fo3.multiselect("📂 Schema", schema_options_opt, key="opt_schema_sel", default=[s for s in st.session_state.opt_schema if s in schema_options_opt], on_change=opt_schema_changed)
         
         # Table Filter (Cascading)
         if st.session_state.opt_schema:
@@ -1100,7 +1114,48 @@ def render_dashboard():
                 db_ctx = f" across {', '.join(sel_dbs)}" if sel_dbs else ""
                 
                 resp = ""
-                if re.search(r'\b(forecast|spend|cost|bill)\b', q):
+                if re.search(r'\b(switch to|platform)\b', q):
+                    found_plat = None
+                    for p in PLATFORMS:
+                        if p.lower() in q: found_plat = p
+                    if found_plat:
+                        st.session_state.selected_platform = found_plat
+                        st.session_state.ai_messages.append({"role": "ai", "content": f"✅ **Platform Changed:** Switched analytical context to **{found_plat}**."})
+                        st.rerun()
+                    else:
+                        resp = f"I didn't recognize that platform. Available options: {', '.join(PLATFORMS)}."
+
+                elif re.search(r'\b(filter|database|schema)\b', q):
+                    # Simple heuristic extract
+                    target = q.split("filter by")[-1].strip() if "filter by" in q else q.split("database")[-1].strip()
+                    if target:
+                        # Match closest DB
+                        db_matches = [d for d in db_opts if target in d.lower()]
+                        if db_matches:
+                            st.session_state.obs_db = [db_matches[0]]
+                            st.session_state.opt_db = [db_matches[0]]
+                            st.session_state.obs_schema = []
+                            st.session_state.opt_schema = []
+                            st.session_state.obs_table = []
+                            st.session_state.opt_table = []
+                            st.session_state.ai_messages.append({"role": "ai", "content": f"✅ **Filters Applied:** Scoped data to database **{db_matches[0]}**."})
+                            st.rerun()
+                        else:
+                            resp = f"I couldn't find a database matching '{target}'. Please check the name and try again."
+                    else:
+                         resp = "Please specify which database or schema to filter by (e.g. 'filter by database ehr_prod')."
+
+                elif re.search(r'\b(export my inactive assets|export inactive|download)\b', q):
+                    inactive_assets_df = plat_assets[~plat_assets['is_active']]
+                    if not inactive_assets_df.empty:
+                        csv_data = inactive_assets_df.to_csv(index=False).encode('utf-8')
+                        b64 = base64.b64encode(csv_data).decode()
+                        dl_link = f'<a href="data:file/csv;base64,{b64}" download="inactive_assets_{plat}.csv" style="display:inline-block;padding:8px 16px;background:#2563EB;color:white;text-decoration:none;border-radius:8px;font-weight:600;margin-top:10px;">📥 Download Inactive Assets CSV</a>'
+                        resp = f"✅ **Export Generated:** I have prepared the file containing {len(inactive_assets_df)} inactive assets for {plat}.<br>{dl_link}"
+                    else:
+                        resp = "There are no inactive assets to export on this platform."
+
+                elif re.search(r'\b(forecast|spend|cost|bill)\b', q):
                     latest_usage = plat_usage.sort_values('usage_date').iloc[-1]
                     cost_data = pricing_engine.calculate_cost(plat, latest_usage['compute_units'], latest_usage['storage_gb'], latest_usage.get('data_transfer_gb', 0))
                     resp = f"I've analyzed the 5-year trend for **{plat}**. Based on historical ARIMA ML forecasting, your monthly spend is projected to reach **${cost_data['total']*30*1.15:,.0f}** by next year (+15%)."
@@ -1114,12 +1169,13 @@ def render_dashboard():
                         total_inactive_users = plat_assets['users_with_access'].sum() - plat_assets['active_users'].sum()
                         resp = f"⚠️ I identified **{total_inactive_users:,}** inactive access holders across the **{domain}** domain. These are 'silent killers' for governance. You can view the full list in the Optimization & Governance tab."
                 
-                elif re.search(r'\b(show inactive assets|archive|optimize|clean)\b', q):
+                elif re.search(r'\b(show inactive assets|archive|clean)\b', q):
                     inactive_assets_df = plat_assets[~plat_assets['is_active']]
                     if not inactive_assets_df.empty:
                         tables_to_archive = inactive_assets_df['table_name'].tolist()
                         st.session_state.archival_cart = list(set(st.session_state.archival_cart + tables_to_archive))
-                        resp = f"✅ **Action Triggered:** I have scanned **{plat}** and added **{len(tables_to_archive)}** inactive assets to your archival workflow. This will reclaim **{inactive_assets_df['storage_release_gb'].sum():,.1f} GB** of storage."
+                        st.session_state.ai_messages.append({"role": "ai", "content": f"✅ **Action Triggered:** I have scanned **{plat}** and added **{len(tables_to_archive)}** inactive assets to your archival workflow. This will reclaim **{inactive_assets_df['storage_release_gb'].sum():,.1f} GB** of storage."})
+                        st.rerun()
                     else:
                         resp = "I've scanned the environment and found no additional inactive assets to archive at this time."
                 
@@ -1129,7 +1185,18 @@ def render_dashboard():
                     resp = f"The total storage footprint for **{domain}** on **{plat}**{db_ctx} is **{total_gb:,.1f} GB**. Active assets account for {active_gb:,.1f} GB."
                 
                 elif re.search(r'\b(recommend|governance|insights)\b', q):
-                    if inactive_df_all.empty:
+                    target_table = None
+                    for t in plat_assets['table_name'].unique():
+                        if t.lower() in q: target_table = t
+                        
+                    if target_table:
+                        asset = plat_assets[plat_assets['table_name'] == target_table].iloc[0]
+                        gov_engine = GovernanceEngine(plat)
+                        recs = gov_engine.generate_recommendations(asset)
+                        resp = f"**Governance Analysis for `{target_table}`:**\n\n"
+                        for r in recs[:4]:
+                            resp += f"- **{r['dimension']}** ({r['impact']} Impact): {r['recommendation']}\n"
+                    elif inactive_df_all.empty:
                          resp = "I've scanned the environment and found no inactive assets to analyze at this time."
                     else:
                         top_asset = inactive_df_all.sort_values('five_year_savings', ascending=False).iloc[0]
@@ -1141,10 +1208,11 @@ def render_dashboard():
                         resp += f"\nYou can view the full 15-dimension analysis in the **Cloud Governance & Optimization** tab."
                 
                 else:
-                    resp = f"I am your Cloud Governance AI. I can help you analyze access risks, forecast **{plat}** costs, or automate data archival for the **{domain}** domain. Try asking: 'What is my forecasted spend?' or 'Archive inactive data'."
+                    resp = f"I am your Cloud Governance AI. I can help you analyze access risks, forecast **{plat}** costs, or automate data archival for the **{domain}** domain. Try asking: 'Switch to AWS' or 'Export my inactive assets'."
                 
-                st.session_state.ai_messages.append({"role": "ai", "content": resp})
-                st.rerun()
+                if resp:
+                    st.session_state.ai_messages.append({"role": "ai", "content": resp})
+                    st.rerun()
 
 if __name__ == "__main__":
     main()
