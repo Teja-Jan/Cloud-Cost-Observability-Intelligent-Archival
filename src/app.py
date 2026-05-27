@@ -598,11 +598,16 @@ def render_dashboard():
         if "obs_table" not in st.session_state: st.session_state.obs_table = []
         if "obs_status" not in st.session_state: st.session_state.obs_status = "All Assets"
 
+        def reset_obs_filters():
+            st.session_state.obs_db = []
+            st.session_state.obs_schema = []
+            st.session_state.obs_table = []
+
         st.markdown("#### 🔍 Observability Hierarchy Filters")
         fo1, fo2, fo3, fo4 = st.columns(4)
         
         # Asset Status (Matching Optimization Category)
-        st.session_state.obs_status = fo1.selectbox("📋 Asset Status", ["All Assets", "Active Assets", "Inactive Assets"], key="obs_status_sel", index=["All Assets", "Active Assets", "Inactive Assets"].index(st.session_state.obs_status))
+        st.session_state.obs_status = fo1.selectbox("📋 Asset Status", ["All Assets", "Active Assets", "Inactive Assets"], key="obs_status_sel", index=["All Assets", "Active Assets", "Inactive Assets"].index(st.session_state.obs_status), on_change=reset_obs_filters)
         
         # Database Filter
         db_opts = sorted(plat_assets['database'].unique())
@@ -843,11 +848,16 @@ def render_dashboard():
         if "opt_table" not in st.session_state: st.session_state.opt_table = []
         if "opt_category" not in st.session_state: st.session_state.opt_category = "All Assets"
 
+        def reset_opt_filters():
+            st.session_state.opt_db = []
+            st.session_state.opt_schema = []
+            st.session_state.opt_table = []
+
         st.markdown("#### 🔍 Optimization Hierarchy Filters")
         fo1, fo2, fo3, fo4 = st.columns(4)
         
         # Asset Category (Replacing 3 buttons)
-        st.session_state.opt_category = fo1.selectbox("📋 Asset Category", ["All Assets", "Active Assets", "Inactive Assets"], index=["All Assets", "Active Assets", "Inactive Assets"].index(st.session_state.opt_category))
+        st.session_state.opt_category = fo1.selectbox("📋 Asset Category", ["All Assets", "Active Assets", "Inactive Assets"], key="opt_category_sel", index=["All Assets", "Active Assets", "Inactive Assets"].index(st.session_state.opt_category), on_change=reset_opt_filters)
         
         # Database Filter
         db_options_opt = sorted(plat_assets['database'].unique())
@@ -970,6 +980,7 @@ def render_dashboard():
                 hide_index=True,
                 use_container_width=True,
                 height=400,
+                key="inactive_assets_data_editor"
             )
 
             sel_tables = edited_df[edited_df['Archive']]['table_name'].tolist()
@@ -1081,6 +1092,7 @@ def render_dashboard():
                 st.session_state.ai_messages.append({"role": "user", "content": user_q})
                 
                 # Enhanced NLP Agentic Logic
+                import re
                 q = user_q.lower()
                 
                 # Context info
@@ -1088,22 +1100,21 @@ def render_dashboard():
                 db_ctx = f" across {', '.join(sel_dbs)}" if sel_dbs else ""
                 
                 resp = ""
-                if "forecast" in q or "spend" in q or "cost" in q:
-                    resp = f"I've analyzed the 5-year trend for **{plat}**. Based on historical OLS regression, your monthly spend is projected to reach ${cost['total']*30*1.15:,.0f} by next year (+15%)."
+                if re.search(r'\b(forecast|spend|cost|bill)\b', q):
+                    latest_usage = plat_usage.sort_values('usage_date').iloc[-1]
+                    cost_data = pricing_engine.calculate_cost(plat, latest_usage['compute_units'], latest_usage['storage_gb'], latest_usage.get('data_transfer_gb', 0))
+                    resp = f"I've analyzed the 5-year trend for **{plat}**. Based on historical ARIMA ML forecasting, your monthly spend is projected to reach **${cost_data['total']*30*1.15:,.0f}** by next year (+15%)."
                 
-                elif "inactive users" in q or "access risk" in q:
-                    total_inactive_users = plat_assets['users_with_access'].sum() - plat_assets['active_users'].sum()
-                    resp = f"⚠️ I identified **{total_inactive_users:,}** inactive access holders across the **{domain}** domain. These are 'silent killers' for governance. You can view the full list in the Optimization & Governance tab."
-                
-                elif "who has access" in q or "permissions" in q:
+                elif re.search(r'\b(inactive users|access risk|silent killers|permissions|who has access)\b', q):
                     if sel_dbs:
                         db = sel_dbs[0]
                         users = plat_assets[plat_assets['database'] == db]['users_with_access'].sum()
-                        resp = f"For **{db}**, there are currently **{users}** users with granted access. I recommend a stewardship review to prune inactive accounts."
+                        resp = f"For **{db}**, there are currently **{users:,}** users with granted access. I recommend a stewardship review to prune inactive accounts."
                     else:
-                        resp = "Please select a specific database in the Hierarchy Filters so I can provide precise access details."
+                        total_inactive_users = plat_assets['users_with_access'].sum() - plat_assets['active_users'].sum()
+                        resp = f"⚠️ I identified **{total_inactive_users:,}** inactive access holders across the **{domain}** domain. These are 'silent killers' for governance. You can view the full list in the Optimization & Governance tab."
                 
-                elif "show inactive assets" in q or "archive" in q or "optimize" in q:
+                elif re.search(r'\b(show inactive assets|archive|optimize|clean)\b', q):
                     inactive_assets_df = plat_assets[~plat_assets['is_active']]
                     if not inactive_assets_df.empty:
                         tables_to_archive = inactive_assets_df['table_name'].tolist()
@@ -1112,24 +1123,25 @@ def render_dashboard():
                     else:
                         resp = "I've scanned the environment and found no additional inactive assets to archive at this time."
                 
-                elif "size" in q or "storage" in q or "memory" in q:
+                elif re.search(r'\b(size|storage|memory|footprint)\b', q):
                     total_gb = plat_assets['size_gb'].sum()
-                    resp = f"The total storage footprint for **{domain}** on **{plat}**{db_ctx} is **{total_gb:,.1f} GB**. Active assets account for {plat_assets[plat_assets['is_active']]['size_gb'].sum():,.1f} GB."
+                    active_gb = plat_assets[plat_assets['is_active']]['size_gb'].sum()
+                    resp = f"The total storage footprint for **{domain}** on **{plat}**{db_ctx} is **{total_gb:,.1f} GB**. Active assets account for {active_gb:,.1f} GB."
                 
-                elif "recommend" in q or "governance" in q:
+                elif re.search(r'\b(recommend|governance|insights)\b', q):
                     if inactive_df_all.empty:
-                         resp = "I've scanned the environment and found no inactive assets to archive at this time."
+                         resp = "I've scanned the environment and found no inactive assets to analyze at this time."
                     else:
                         top_asset = inactive_df_all.sort_values('five_year_savings', ascending=False).iloc[0]
                         gov_engine = GovernanceEngine(plat)
                         recs = gov_engine.generate_recommendations(top_asset)
                         resp = f"For **{top_asset['table_name']}**, I recommend the following governance actions:\n\n"
-                        for r in recs[:3]: # Show top 3
+                        for r in recs[:3]:
                             resp += f"- **{r['dimension']}**: {r['recommendation']}\n"
                         resp += f"\nYou can view the full 15-dimension analysis in the **Cloud Governance & Optimization** tab."
                 
                 else:
-                    resp = f"I am your Cloud Governance AI. I can help you analyze access risks, forecast **{plat}** costs, or automate data archival for the **{domain}** domain. What would you like to investigate?"
+                    resp = f"I am your Cloud Governance AI. I can help you analyze access risks, forecast **{plat}** costs, or automate data archival for the **{domain}** domain. Try asking: 'What is my forecasted spend?' or 'Archive inactive data'."
                 
                 st.session_state.ai_messages.append({"role": "ai", "content": resp})
                 st.rerun()
