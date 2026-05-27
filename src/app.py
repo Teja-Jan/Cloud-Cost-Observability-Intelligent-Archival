@@ -625,25 +625,25 @@ def render_dashboard():
         fo1, fo2, fo3, fo4 = st.columns(4)
         
         # Asset Status (Matching Optimization Category)
-        st.session_state.obs_status = fo1.selectbox("📋 Asset Status", ["All Assets", "Active Assets", "Inactive Assets"], key="obs_status_sel", index=["All Assets", "Active Assets", "Inactive Assets"].index(st.session_state.obs_status), on_change=reset_obs_filters)
+        fo1.selectbox("📋 Asset Status", ["All Assets", "Active Assets", "Inactive Assets"], key="obs_status", on_change=reset_obs_filters)
         
         # Database Filter
         db_opts = sorted(plat_assets['database'].unique())
-        st.session_state.obs_db = fo2.multiselect("📁 Database", db_opts, key="obs_db_sel", default=st.session_state.obs_db, on_change=obs_db_changed)
+        fo2.multiselect("📁 Database", db_opts, key="obs_db", on_change=obs_db_changed)
         
         # Schema Filter (Cascading)
         if st.session_state.obs_db:
             sch_opts = sorted(plat_assets[plat_assets['database'].isin(st.session_state.obs_db)]['schema'].unique())
         else:
             sch_opts = sorted(plat_assets['schema'].unique())
-        st.session_state.obs_schema = fo3.multiselect("📂 Schema", sch_opts, key="obs_schema_sel", default=[s for s in st.session_state.obs_schema if s in sch_opts], on_change=obs_schema_changed)
+        fo3.multiselect("📂 Schema", sch_opts, key="obs_schema", on_change=obs_schema_changed)
         
         # Table Filter (Cascading)
         if st.session_state.obs_schema:
             tab_opts = sorted(plat_assets[plat_assets['schema'].isin(st.session_state.obs_schema)]['table_name'].unique())
         else:
             tab_opts = sorted(plat_assets['table_name'].unique())
-        st.session_state.obs_table = fo4.multiselect("📄 Table / Object", tab_opts, key="obs_table_sel", default=[t for t in st.session_state.obs_table if t in tab_opts])
+        fo4.multiselect("📄 Table / Object", tab_opts, key="obs_table")
 
         # Removed redundant filter block here because it is now applied before inventory_display
         st.markdown("#### 📋 Consolidated Enterprise Asset Inventory")
@@ -873,25 +873,25 @@ def render_dashboard():
         fo1, fo2, fo3, fo4 = st.columns(4)
         
         # Asset Category (Replacing 3 buttons)
-        st.session_state.opt_category = fo1.selectbox("📋 Asset Category", ["All Assets", "Active Assets", "Inactive Assets"], key="opt_category_sel", index=["All Assets", "Active Assets", "Inactive Assets"].index(st.session_state.opt_category), on_change=reset_opt_filters)
+        fo1.selectbox("📋 Asset Category", ["All Assets", "Active Assets", "Inactive Assets"], key="opt_category", on_change=reset_opt_filters)
         
         # Database Filter
         db_options_opt = sorted(plat_assets['database'].unique())
-        st.session_state.opt_db = fo2.multiselect("📁 Database", db_options_opt, key="opt_db_sel", default=st.session_state.opt_db, on_change=opt_db_changed)
+        fo2.multiselect("📁 Database", db_options_opt, key="opt_db", on_change=opt_db_changed)
         
         # Schema Filter (Cascading)
         if st.session_state.opt_db:
             schema_options_opt = sorted(plat_assets[plat_assets['database'].isin(st.session_state.opt_db)]['schema'].unique())
         else:
             schema_options_opt = sorted(plat_assets['schema'].unique())
-        st.session_state.opt_schema = fo3.multiselect("📂 Schema", schema_options_opt, key="opt_schema_sel", default=[s for s in st.session_state.opt_schema if s in schema_options_opt], on_change=opt_schema_changed)
+        fo3.multiselect("📂 Schema", schema_options_opt, key="opt_schema", on_change=opt_schema_changed)
         
         # Table Filter (Cascading)
         if st.session_state.opt_schema:
             table_options_opt = sorted(plat_assets[plat_assets['schema'].isin(st.session_state.opt_schema)]['table_name'].unique())
         else:
             table_options_opt = sorted(plat_assets['table_name'].unique())
-        st.session_state.opt_table = fo4.multiselect("📄 Table / Object", table_options_opt, key="opt_table_sel", default=[t for t in st.session_state.opt_table if t in table_options_opt])
+        fo4.multiselect("📄 Table / Object", table_options_opt, key="opt_table")
 
         # Filter the data
         filtered_opt = plat_assets.copy()
