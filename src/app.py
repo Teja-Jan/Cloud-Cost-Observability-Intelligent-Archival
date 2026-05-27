@@ -409,13 +409,29 @@ def render_dashboard():
     # Pre-calculate filtered data for shared use
     inactive_df_all = assets_df[(assets_df['domain'] == domain) & (assets_df['platform'] == plat) & (~assets_df['is_active'])].copy()
     
-    # Move inventory_display logic up so it can be used for query params check
-    filtered_assets = assets_df[(assets_df['domain'] == domain) & (assets_df['platform'] == plat)].copy()
-    if st.session_state.get('obs_table'):
-        filtered_assets = filtered_assets[filtered_assets['table_name'].isin(st.session_state.get('obs_table'))]
+    # Ensure session state variables for Observability exist before filtering
+    if "obs_db" not in st.session_state: st.session_state.obs_db = []
+    if "obs_schema" not in st.session_state: st.session_state.obs_schema = []
+    if "obs_table" not in st.session_state: st.session_state.obs_table = []
+    if "obs_status" not in st.session_state: st.session_state.obs_status = "All Assets"
+
+    # Pre-filter assets for the grid to ensure perfect UI binding
+    obs_filtered_assets = assets_df[(assets_df['domain'] == domain) & (assets_df['platform'] == plat)].copy()
+    
+    if st.session_state.obs_status == "Active Assets": 
+        obs_filtered_assets = obs_filtered_assets[obs_filtered_assets['is_active']]
+    elif st.session_state.obs_status == "Inactive Assets": 
+        obs_filtered_assets = obs_filtered_assets[~obs_filtered_assets['is_active']]
         
-    filtered_assets['inactive_users'] = filtered_assets['users_with_access'] - filtered_assets['active_users']
-    filtered_assets['last_accessed_users_count'] = filtered_assets.apply(lambda r: r['active_users'] + min(2, r['inactive_users']), axis=1)
+    if st.session_state.obs_db: 
+        obs_filtered_assets = obs_filtered_assets[obs_filtered_assets['database'].isin(st.session_state.obs_db)]
+    if st.session_state.obs_schema: 
+        obs_filtered_assets = obs_filtered_assets[obs_filtered_assets['schema'].isin(st.session_state.obs_schema)]
+    if st.session_state.obs_table: 
+        obs_filtered_assets = obs_filtered_assets[obs_filtered_assets['table_name'].isin(st.session_state.obs_table)]
+        
+    obs_filtered_assets['inactive_users'] = obs_filtered_assets['users_with_access'] - obs_filtered_assets['active_users']
+    obs_filtered_assets['last_accessed_users_count'] = obs_filtered_assets.apply(lambda r: r['active_users'] + min(2, r['inactive_users']), axis=1)
     
     display_cols = [
         'database', 'schema', 'table_name', 'object_type', 
@@ -423,7 +439,7 @@ def render_dashboard():
         'last_accessed_users_count', 'impact_reason'
     ]
     
-    inventory_display = filtered_assets[display_cols].rename(columns={
+    inventory_display = obs_filtered_assets[display_cols].rename(columns={
         'database':'Database', 'schema':'Schema', 'table_name':'Asset Name',
         'object_type':'Type', 'size_gb':'Size (GB)', 'memory_usage_gb':'Memory (GB)',
         'active_users':'Active Users', 'inactive_users':'Inactive Users',
@@ -593,11 +609,6 @@ def render_dashboard():
         st.markdown("---")
 
         # ── 🔍 Hierarchy Filters (Optimization Style) ──────────────────
-        if "obs_db" not in st.session_state: st.session_state.obs_db = []
-        if "obs_schema" not in st.session_state: st.session_state.obs_schema = []
-        if "obs_table" not in st.session_state: st.session_state.obs_table = []
-        if "obs_status" not in st.session_state: st.session_state.obs_status = "All Assets"
-
         def reset_obs_filters():
             st.session_state.obs_db = []
             st.session_state.obs_schema = []
@@ -634,16 +645,7 @@ def render_dashboard():
             tab_opts = sorted(plat_assets['table_name'].unique())
         st.session_state.obs_table = fo4.multiselect("📄 Table / Object", tab_opts, key="obs_table_sel", default=[t for t in st.session_state.obs_table if t in tab_opts])
 
-        # Apply Filters to consolidated table
-        filtered_assets = plat_assets.copy()
-        if st.session_state.obs_status == "Active Assets": filtered_assets = filtered_assets[filtered_assets['is_active']]
-        elif st.session_state.obs_status == "Inactive Assets": filtered_assets = filtered_assets[~filtered_assets['is_active']]
-        
-        if st.session_state.obs_db: filtered_assets = filtered_assets[filtered_assets['database'].isin(st.session_state.obs_db)]
-        if st.session_state.obs_schema: filtered_assets = filtered_assets[filtered_assets['schema'].isin(st.session_state.obs_schema)]
-        if st.session_state.obs_table: filtered_assets = filtered_assets[filtered_assets['table_name'].isin(st.session_state.obs_table)]
-
-        st.markdown("---")
+        # Removed redundant filter block here because it is now applied before inventory_display
         st.markdown("#### 📋 Consolidated Enterprise Asset Inventory")
         
         # ── Clickable Asset Inventory Table ──
@@ -654,7 +656,7 @@ def render_dashboard():
         data_records = inventory_display.to_dict(orient="records")
         cols = list(inventory_display.columns)
         
-        clicked_data = interactive_table(columns=cols, data=data_records, key=f"inv_table_{len(filtered_assets)}")
+        clicked_data = interactive_table(columns=cols, data=data_records, key=f"inv_table_{len(obs_filtered_assets)}")
         
         if clicked_data:
             clicked_asset = clicked_data.get("asset")
@@ -1147,6 +1149,7 @@ def render_dashboard():
 
                 elif re.search(r'\b(export my inactive assets|export inactive|download)\b', q):
                     inactive_assets_df = plat_assets[~plat_assets['is_active']]
+                    if st.session_state.get('obs_db'): inactive_assets_df = inactive_assets_df[inactive_assets_df['database'].isin(st.session_state.obs_db)]
                     if not inactive_assets_df.empty:
                         csv_data = inactive_assets_df.to_csv(index=False).encode('utf-8')
                         b64 = base64.b64encode(csv_data).decode()
