@@ -270,14 +270,14 @@ def ensure_mock_data():
         start_date = datetime.now() - timedelta(days=365 * 2)  # 2 years history
 
         platform_base = {
-            "Snowflake":                   (350, 45000, 80, 1600),
-            "Databricks":                  (280, 38000, 65, 1200),
-            "BigQuery":                    (420, 55000, 95, 1900),
-            "AWS":                         (310, 42000, 75, 1400),
-            "Azure":                       (290, 40000, 70, 1300),
-            "Google Cloud Platform":       (380, 50000, 85, 1750),
-            "Oracle Cloud Infrastructure": (240, 30000, 55, 1100),
-            "IBM Cloud":                   (220, 28000, 50, 1000),
+            "Snowflake":                   (35, 4500, 8, 160),
+            "Databricks":                  (28, 3800, 6.5, 120),
+            "BigQuery":                    (42, 5500, 9.5, 190),
+            "AWS":                         (31, 4200, 7.5, 140),
+            "Azure":                       (29, 4000, 7.0, 130),
+            "Google Cloud Platform":       (38, 5000, 8.5, 175),
+            "Oracle Cloud Infrastructure": (24, 3000, 5.5, 110),
+            "IBM Cloud":                   (22, 2800, 5.0, 100),
         }
 
         for plat, (base_c, base_s, base_t, base_m) in platform_base.items():
