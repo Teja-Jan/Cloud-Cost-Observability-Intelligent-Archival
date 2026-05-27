@@ -177,12 +177,12 @@ The Cloud Resource Observability & Intelligent Archival POC is now on GitHub:
 **Repo**: https://github.com/Teja-Jan/Cloud-Cost-Observability-Intelligent-Archival
 
 **How to Run It (Google Colab — No Installation Needed)**
-1. Please follow the Instructions in the README file.
-2. Open the notebook.
+1. Please follow the instructions in the README file.
+2. Open the notebook via the Colab badge.
 3. Go to Runtime → Run all (or press Ctrl + F9).
 4. Wait ~5 minutes for everything to install and build.
-5. The last cell will show a public URL and an IP address (this is the tunnel password).
-6. Click the URL, paste the IP address on the tunnel page, and hit Submit.
+5. The last cell will print a live `trycloudflare.com` URL.
+6. Click the URL to instantly open the platform — **no password or tunnel IP required**.
 7. The full app loads — Dashboard, Observability, Forecasting, Governance.
 
 **What's Inside**
